@@ -1,0 +1,44 @@
+{
+  "nodes": {
+    "hrdr-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793332491,
+        "narHash": "sha256-CN9Wra/olPOEl1PC8ETCJwCn9Wct9H5MosHBbqSLOYs=",
+        "owner": "kryptic-sh",
+        "repo": "hrdr",
+        "rev": "8689912c1e96913f38803196121514679963cae7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kryptic-sh",
+        "repo": "hrdr",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1794554816,
+        "narHash": "sha256-PqJ89Z/qwQa2fB2C0j/GjiviARAtBzVPDUxnbIY6EPA=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e126e9e73c335158ff8279ac14d5f4afec153716",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "hrdr-src": "hrdr-src",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
