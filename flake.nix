@@ -30,6 +30,11 @@
         let
           cfg = config.programs.hrdr;
           toml = pkgs.formats.toml { };
+          content = lib.types.either lib.types.path lib.types.lines;
+          file = v:
+            if lib.isString v && !(lib.hasPrefix "/" v)
+            then { text = v; }
+            else { source = v; };
         in
         {
           options.programs.hrdr = {
@@ -42,13 +47,24 @@
               type = toml.type;
               default = { };
             };
+            agentsMd = lib.mkOption {
+              type = lib.types.nullOr content;
+              default = null;
+            };
+            agents = lib.mkOption {
+              type = lib.types.attrsOf content;
+              default = { };
+            };
           };
 
           config = lib.mkIf cfg.enable {
             home.packages = [ cfg.package ];
-            xdg.configFile."hrdr/config.toml" = lib.mkIf (cfg.settings != { }) {
-              source = toml.generate "hrdr-config.toml" cfg.settings;
-            };
+            xdg.configFile = {
+              "hrdr/config.toml" = lib.mkIf (cfg.settings != { }) {
+                source = toml.generate "hrdr-config.toml" cfg.settings;
+              };
+              "hrdr/AGENTS.md" = lib.mkIf (cfg.agentsMd != null) (file cfg.agentsMd);
+            } // lib.mapAttrs' (name: v: lib.nameValuePair "hrdr/agents/${name}.md" (file v)) cfg.agents;
           };
         };
     };
