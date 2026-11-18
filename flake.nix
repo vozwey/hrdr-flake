@@ -1,39 +1,58 @@
 {
-  description = "Coding harness";
+  description = "Home Manager module for hrdr";
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    hrdr-src = {
-      url = "github:kryptic-sh/hrdr";
-      flake = false;
-    };
+  # Tracks the default branch. No rev or hash is written here; the lock file
+  # holds the commit, and `nix flake update hrdr` moves it to the latest.
+  inputs.hrdr = {
+    url = "github:kryptic-sh/hrdr";
+    flake = false;
   };
 
-  outputs = { self, nixpkgs, hrdr-src }: {
-    homeManagerModules.default = { pkgs, ... }: {
-      home.packages = [
-        (pkgs.rustPlatform.buildRustPackage {
-          pname = "hrdr";
-          version = (builtins.fromTOML (builtins.readFile "${hrdr-src}/Cargo.toml")).workspace.package.version;
-          src = hrdr-src;
+  outputs = { self, hrdr }: {
+    homeManagerModules.default = { config, lib, pkgs, ... }:
+      let
+        cfg = config.programs.hrdr;
+        toml = pkgs.formats.toml { };
+      in
+      {
+        options.programs.hrdr = {
+          enable = lib.mkEnableOption "hrdr, a terminal coding agent";
 
-          cargoLock.lockFile = "${hrdr-src}/Cargo.lock";
-          cargoBuildFlags = [ "-p" "hrdr" ];
-
-          nativeBuildInputs = [ pkgs.git ];
-
-          doCheck = false;
-
-          meta = {
-            description = "Coding harness";
-            license = pkgs.lib.licenses.mit;
-            mainProgram = "hrdr";
-            platforms = pkgs.lib.platforms.linux;
+          package = lib.mkOption {
+            type = lib.types.package;
+            description = "The hrdr package, built from the flake input.";
+            default = pkgs.rustPlatform.buildRustPackage {
+              pname = "hrdr";
+              version = (lib.importTOML "${hrdr}/Cargo.toml").workspace.package.version;
+              src = hrdr;
+              cargoLock.lockFile = "${hrdr}/Cargo.lock";
+              cargoBuildFlags = [ "-p" "hrdr" ];
+              doCheck = false;
+              meta = {
+                description = "Terminal coding agent for OpenAI-compatible models";
+                license = lib.licenses.mit;
+                mainProgram = "hrdr";
+              };
+            };
           };
-        })
-      ];
 
-      xdg.configFile."hrdr/config.toml".source = (pkgs.formats.toml { }).generate "hrdr-config.toml" { };
-    };
+          settings = lib.mkOption {
+            type = toml.type;
+            default = { };
+            description = ''
+              Contents of {file}`~/.config/hrdr/config.toml`, written 1:1 as TOML.
+              When empty, no file is created and hrdr manages its own config.
+            '';
+          };
+        };
+
+        config = lib.mkIf cfg.enable {
+          home.packages = [ cfg.package ];
+
+          xdg.configFile."hrdr/config.toml" = lib.mkIf (cfg.settings != { }) {
+            source = toml.generate "hrdr-config.toml" cfg.settings;
+          };
+        };
+      };
   };
 }
